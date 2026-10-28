@@ -185,7 +185,7 @@ func loadTemplates(paths, excludes []string) []*template {
 	return out
 }
 
-// ---- response parsing (response-only files) ----
+// ---- response parsing ----
 
 type response struct {
 	status    int
@@ -198,9 +198,35 @@ type response struct {
 
 var chunkedRe = regexp.MustCompile(`(?i)transfer-encoding:\s*chunked`)
 
+// stripTrailingURL removes httpx -srd's trailing "<url>" line (a standalone
+// http(s):// line at the end, after a blank line) so it can't pollute body
+// matches. Only called for files that carried a request prefix.
+func stripTrailingURL(data []byte) []byte {
+	trimmed := bytes.TrimRight(data, "\r\n")
+	nl := bytes.LastIndexByte(trimmed, '\n')
+	if nl < 0 {
+		return data
+	}
+	last := bytes.TrimSpace(trimmed[nl+1:])
+	if (bytes.HasPrefix(last, []byte("http://")) || bytes.HasPrefix(last, []byte("https://"))) &&
+		!bytes.ContainsAny(last, " \t") {
+		return trimmed[:nl]
+	}
+	return data
+}
+
+// parseResponse reads either a response-only file (starting with "HTTP/", the
+// pypanuclei format) or an httpx -srd file ("<request>\r\n\r\n<response>\r\n\r\n
+// <url>", AutoBB's httprobes_savedir layout). For the latter it seeks to the
+// first HTTP/ status line and drops httpx's trailing URL line, so AutoBB's saved
+// probes can be scanned directly with no staging/shim step.
 func parseResponse(data []byte) (*response, bool) {
 	if !bytes.HasPrefix(data, []byte("HTTP/")) {
-		return nil, false
+		i := bytes.Index(data, []byte("\nHTTP/"))
+		if i < 0 {
+			return nil, false
+		}
+		data = stripTrailingURL(data[i+1:])
 	}
 	nl := bytes.IndexByte(data, '\n')
 	if nl < 0 {

@@ -35,11 +35,15 @@ dropped template can never produce a false positive.
 
 ## Input format
 
-Response-only files (starting with `HTTP/…`), one per `.txt`, under a
-`<host>/…` tree — e.g. `httpx -sr -srd ./responses`. Chunked bodies are decoded.
+Saved HTTP responses, one per `.txt`, under a `<host>/…` tree — produced by
+`httpx -sr -srd ./responses`. Two layouts are read directly:
 
-> AutoBB's httpx `-srd` files are `request\r\n\r\nresponse\r\n\r\nurl`; strip
-> everything before the first `HTTP/` line before pointing panuclei at them.
+- **response-only** (file starts with `HTTP/…`), the pypanuclei format; and
+- **httpx `-srd`** (`request\r\n\r\nresponse\r\n\r\nurl`) — panuclei seeks to the
+  first `HTTP/` status line and ignores httpx's trailing URL line, so AutoBB's
+  `httprobes_savedir` can be scanned as-is with no staging step.
+
+Chunked bodies are decoded.
 
 ## Usage
 
