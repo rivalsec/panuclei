@@ -147,6 +147,14 @@ func prep(t *template) error {
 }
 
 func loadTemplates(paths, excludes []string) []*template {
+	// Clean excludes once so a "./nuclei-templates/..." pattern matches the
+	// walked path (filepath.Walk strips the leading "./"); compare cleaned paths.
+	cleanEx := make([]string, 0, len(excludes))
+	for _, e := range excludes {
+		if c := filepath.Clean(e); c != "." {
+			cleanEx = append(cleanEx, c)
+		}
+	}
 	var out []*template
 	for _, path := range paths {
 		path = strings.TrimRight(path, "/")
@@ -154,8 +162,9 @@ func loadTemplates(paths, excludes []string) []*template {
 			if err != nil || info.IsDir() || !strings.HasSuffix(p, ".yaml") {
 				return nil
 			}
-			for _, e := range excludes {
-				if e != "" && strings.HasPrefix(p, e) {
+			pc := filepath.Clean(p)
+			for _, e := range cleanEx {
+				if strings.HasPrefix(pc, e) {
 					return nil
 				}
 			}
