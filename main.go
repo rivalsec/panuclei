@@ -501,13 +501,13 @@ func templateMatch(t *template, r *response) bool {
 type hit struct {
 	TemplateID    string                 `json:"template-id"`
 	Info          map[string]interface{} `json:"info"`
-	MatcherName   interface{}            `json:"matcher-name"`
+	MatcherName   interface{}            `json:"matcher-name,omitempty"`
 	Type          string                 `json:"type"`
 	Path          string                 `json:"path"`
 	MatchedAt     string                 `json:"matched-at"`
 	Timestamp     string                 `json:"timestamp"`
 	MatcherStatus bool                   `json:"matcher-status"`
-	MatchedLine   interface{}            `json:"matched-line"`
+	MatchedLine   interface{}            `json:"matched-line,omitempty"`
 }
 
 type multiFlag []string
